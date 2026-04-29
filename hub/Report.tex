@@ -1,0 +1,359 @@
+\documentclass[12pt]{article}
+
+% ── Packages ──────────────────────────────────────────────────────────────────
+\usepackage[a4paper, margin=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{parskip}
+\usepackage{fancyhdr}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage{graphicx}
+
+% ── Hyperlink colours ─────────────────────────────────────────────────────────
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!60!black,
+    urlcolor=blue!70!black,
+    citecolor=green!50!black
+}
+
+% ── Code listing style ────────────────────────────────────────────────────────
+\definecolor{codebg}{rgb}{0.95,0.95,0.97}
+\definecolor{codeframe}{rgb}{0.75,0.75,0.85}
+\definecolor{keywordcolor}{rgb}{0.13,0.29,0.53}
+\definecolor{commentcolor}{rgb}{0.25,0.50,0.25}
+\definecolor{stringcolor}{rgb}{0.60,0.10,0.10}
+
+\lstdefinestyle{pythonstyle}{
+    backgroundcolor=\color{codebg},
+    frame=single,
+    rulecolor=\color{codeframe},
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{keywordcolor}\bfseries,
+    commentstyle=\color{commentcolor}\itshape,
+    stringstyle=\color{stringcolor},
+    language=Python,
+    breaklines=true,
+    showstringspaces=false,
+    tabsize=4,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    numbersep=5pt,
+    xleftmargin=15pt,
+}
+
+\lstdefinestyle{bashstyle}{
+    backgroundcolor=\color{codebg},
+    frame=single,
+    rulecolor=\color{codeframe},
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{keywordcolor}\bfseries,
+    commentstyle=\color{commentcolor}\itshape,
+    stringstyle=\color{stringcolor},
+    language=bash,
+    breaklines=true,
+    showstringspaces=false,
+    tabsize=4,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    numbersep=5pt,
+    xleftmargin=15pt,
+}
+
+% ── Header / Footer ───────────────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{CS104 Project --- Board Game Suite}
+\lhead{\leftmark}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ── Section title spacing ─────────────────────────────────────────────────────
+\titlespacing*{\section}{0pt}{18pt}{8pt}
+\titlespacing*{\subsection}{0pt}{12pt}{6pt}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\begin{document}
+
+% ── Title Page ────────────────────────────────────────────────────────────────
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    {\Huge\bfseries CS104 Project\\[0.4em]Board Game Suite\par}
+    \vspace{1.5cm}
+    {\Large\itshape Ansh Garg\par}
+    \vspace{0.5cm}
+    {\large Date: \today\par}
+    \vfill
+    {\large Department of Computer Science and Engineering\par}
+\end{titlepage}
+
+% ── Table of Contents ─────────────────────────────────────────────────────────
+\tableofcontents
+\newpage
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{External Libraries Used}
+
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{>{\bfseries}p{3cm} p{10cm}}
+\toprule
+Library & Purpose \\
+\midrule
+\texttt{pygame}    & Core graphics, event handling, window management, font rendering, and music playback for all games. \\
+\texttt{numpy}     & Efficient 2-D board representation using \texttt{np.zeros}, vectorised win checks with \texttt{np.all}, diagonal extraction, and array slicing throughout all game logic. \\
+\texttt{matplotlib}& Generating the post-game statistics charts: a bar chart of top player wins and a pie chart of game-type frequency, saved as \texttt{charts.png}. \\
+\texttt{csv}       & Appending match results (winner, loser, timestamp, game type) to \texttt{history.csv} and reading it back for leaderboard generation. \\
+\texttt{sys}       & Reading command-line arguments (\texttt{sys.argv}) to pass the two authenticated usernames from the shell script into Python. \\
+\texttt{os}        & Centring the pygame window (\texttt{SDL\_VIDEO\_CENTERED}), invoking the leaderboard shell script, and opening the generated chart image. \\
+\texttt{datetime}  & Timestamping each game result written to \texttt{history.csv}. \\
+\bottomrule
+\end{tabular}
+\caption{External Python libraries and their roles}
+\end{table}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Directory Structure}
+
+\begin{itemize}[leftmargin=2em]
+    \item \texttt{game.py} --- Entry point and main menu; also contains the \texttt{BoardGame} base class, the \texttt{chart()} helper, the \texttt{stats()} screen, and \texttt{main\_menu()}.
+    \item \texttt{othello.py} --- Full implementation of the \texttt{Othello} class, inheriting from \texttt{BoardGame}.
+    \item \texttt{tictactoe.py} --- Full implementation of the \texttt{Tic\_Tac\_Toe} class, inheriting from \texttt{BoardGame}.
+    \item \texttt{main.sh} --- Bash entry point: handles user authentication (login / sign-up) for both players and then calls \texttt{python3 game.py \$usr1 \$usr2}.
+    \item \texttt{leaderboard.sh} --- Displays a ranked leaderboard from \texttt{history.csv} (sorting by name, wins, losses, or W/L ratio depending on the preference passed in).
+    \item \texttt{check.awk} --- AWK script used by \texttt{main.sh} to check whether a username exists in \texttt{user.tsv}.
+    \item \texttt{pswd.awk} --- AWK script used by \texttt{main.sh} to retrieve the stored password hash for a given username.
+    \item \texttt{user.tsv} --- Tab-separated store of usernames and their SHA-256 password hashes.
+    \item \texttt{history.csv} --- Append-only log of completed matches: winner, loser, timestamp, game type.
+    \item \texttt{charts.png} --- Auto-generated statistics image produced by \texttt{chart()}.
+\end{itemize}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Running Instructions}
+
+\begin{enumerate}
+    \item Ensure all Python libraries are installed:
+\begin{lstlisting}[style=bashstyle]
+pip install pygame numpy matplotlib
+\end{lstlisting}
+    \item From the project root directory, run:
+\begin{lstlisting}[style=bashstyle]
+bash main.sh
+\end{lstlisting}
+    \item Follow the on-screen prompts to log in or register both players.
+    \item The main menu appears; select \textbf{Play Othello} or \textbf{Play Tic-Tac-Toe}.
+    \item After the game ends, a statistics screen and leaderboard are displayed automatically.
+    \item Press \texttt{Q} at any time during a game to quit back to the menu.
+\end{enumerate}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Features Implemented}
+
+\subsection{Authentication System (\texttt{main.sh})}
+\begin{itemize}
+    \item Two-player sequential login flow before the game starts.
+    \item Existing users are validated with a SHA-256 hashed password check via \texttt{sha256sum}.
+    \item Up to three password re-entry attempts before prompting the user to create a new account.
+    \item New users are registered: the username is checked for uniqueness, then the hashed credential pair is appended to \texttt{user.tsv}.
+    \item Duplicate usernames for Player 1 and Player 2 are explicitly rejected.
+\end{itemize}
+
+\subsection{Main Menu (\texttt{game.py})}
+\begin{itemize}
+    \item A pygame GUI with three buttons: \textit{Play Othello}, \textit{Play Tic-Tac-Toe}, and \textit{Quit}.
+    \item For Othello, an additional screen asks whether the player wants hint overlays before the game begins.
+    \item Each completed match is immediately appended to \texttt{history.csv} with the winner, loser, timestamp, and game type.
+    \item After every game, the statistics/leaderboard screen is shown.
+\end{itemize}
+
+\subsection{Othello (\texttt{othello.py})}
+\begin{itemize}
+    \item Standard $8 \times 8$ Othello board rendered on a green background.
+    \item Full four-directional flip logic: horizontal, vertical, and both diagonals are checked with NumPy array slicing.
+    \item Move validation (\texttt{Is\_Valid}) and board mutation (\texttt{Change\_if\_Valid}) are kept separate to avoid side effects during hint calculation.
+    \item Automatic turn skip when the current player has no legal moves.
+    \item Game-over detection when the board is full or neither player has a legal move; the piece count determines the winner.
+    \item \textbf{Hint mode}: when enabled, all valid moves are outlined in the current player's colour.
+    \item \textbf{Custom cursor}: when hints are disabled, the mouse cursor is replaced with a correctly coloured disc following the pointer.
+\end{itemize}
+
+\subsection{Tic-Tac-Toe (\texttt{tictactoe.py})}
+\begin{itemize}
+    \item Configurable grid size (\texttt{n\_col}) and winning run length (\texttt{length\_of\_win}), defaulting to a $10 \times 10$ grid with a winning run of 5.
+    \item Vectorised win detection across rows, columns, and both diagonals using \texttt{np.all} on sub-arrays.
+    \item Colour-coded symbols: Player 1 uses gold \textbf{O} and Player 2 uses blue \textbf{X}.
+    \item Custom cursor: the current player's symbol follows the mouse and disappears after a click until the mouse moves to a new cell.
+    \item Game-over overlay: a coloured banner displays the winner's name, then the window pauses for three seconds before returning.
+    \item Press \texttt{R} during a game to instantly restart.
+\end{itemize}
+
+\subsection{Statistics and Leaderboard}
+\begin{itemize}
+    \item After each game, \texttt{stats()} presents four sorting options: by name, wins, losses, or W/L ratio.
+    \item \texttt{leaderboard.sh} reads \texttt{history.csv} and prints a ranked table in the terminal.
+    \item \texttt{chart()} uses \texttt{matplotlib} to produce a dual-panel figure: a bar chart of the top players by win count, and a pie chart of game-type frequency. The image is saved and opened automatically.
+\end{itemize}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Code Logic}
+
+\subsection{Generic Base Class --- \texttt{BoardGame} (\texttt{game.py})}
+
+\texttt{BoardGame} is a lightweight abstract base that provides shared state and utilities to both game classes.
+
+\begin{itemize}
+    \item \textbf{Class attributes} \texttt{player1} and \texttt{player2} are set once from \texttt{sys.argv} and are therefore shared across all subclass instances in a session.
+    \item \texttt{switch\_turn(player)} returns \texttt{3 - player}, toggling cleanly between 1 and 2 without any conditional logic.
+    \item \texttt{check\_winner()} raises \texttt{NotImplementedError}, enforcing that every subclass must supply its own win logic.
+    \item Instance variables \texttt{winner} and \texttt{loser} are written by the subclass at game-end and read by \texttt{main\_menu()} to decide whether to log the result.
+\end{itemize}
+
+\subsection{Othello (\texttt{othello.py})}
+
+\subsubsection{Initialisation}
+The constructor accepts board thickness, grid size, window pixel size, and a game counter. It derives the cell width from the formula:
+\[
+w = \frac{\text{size} - \text{thickness} \times (n+1)}{n}
+\]
+The board array \texttt{arr} is a NumPy $n \times n$ zero matrix; cells are coded 0 (empty), 1 (black), 2 (white).
+
+\subsubsection{Move Validation --- \texttt{Is\_Valid(x, y, chance)}}
+Temporarily places the piece at \texttt{(x,y)}, then scans all four directions:
+\begin{itemize}
+    \item \textbf{Horizontal / Vertical}: iterates over the row or column, finds another cell of the same colour, and checks that every cell between the two is the opponent's colour using \texttt{np.full} and \texttt{.all()}.
+    \item \textbf{Diagonals}: walks to the relevant board edge first, then traverses the diagonal, extracting elements with stride-based 1-D indexing on the flattened array (\texttt{arr.reshape(-1)}).
+\end{itemize}
+The temporary piece is removed before returning.
+
+\subsubsection{Board Mutation --- \texttt{Change\_if\_Valid(x, y, chance)}}
+Identical directional logic to \texttt{Is\_Valid}, but instead of returning early it actually overwrites the sandwiched opponent pieces with \texttt{np.full(..., chance)}.
+
+\subsubsection{Game Loop --- \texttt{Game\_Start()}}
+Calls \texttt{Grid\_Set()} to draw the initial four pieces, then enters the main event loop. On each left-click, pixel coordinates are converted to grid indices via \texttt{pos\_to\_arr()}, and \texttt{Change\_if\_Valid} is called. If it succeeds the turn switches. If the new player has no valid moves (\texttt{all\_valid} is empty) the turn is passed back automatically.
+
+\subsection{Tic-Tac-Toe (\texttt{tictactoe.py})}
+
+\subsubsection{Win Detection --- \texttt{Check\_win(arr, n\_col, chance, a)}}
+Iterates over all positions and checks contiguous sub-arrays of length \texttt{a}:
+\begin{itemize}
+    \item Rows: \texttt{arr[i, j:j+a]}
+    \item Columns: \texttt{arr[j:j+a, i]}
+    \item Main diagonal of each $a \times a$ sub-matrix: \texttt{np.diag(sub)}
+    \item Anti-diagonal: \texttt{np.diag(np.fliplr(sub))}
+\end{itemize}
+All comparisons use \texttt{np.all(...~== chance)}, making the check O($n^2$) regardless of \texttt{a}.
+
+\subsubsection{Game Loop --- \texttt{Game\_Start()}}
+Redraws the grid every frame. A custom cursor (the current player's symbol) follows the mouse and is hidden once a cell is clicked, reappearing only when the mouse enters a different cell. On game-over, a coloured rectangle with the winner's name is rendered, the display updates once, and then the loop waits 3 seconds before exiting.
+
+\subsection{Authentication System (\texttt{main.sh})}
+
+The script handles both players sequentially using the same logic:
+\begin{enumerate}
+    \item Check the username against \texttt{user.tsv} via \texttt{check.awk}.
+    \item If found, read the password, hash it with \texttt{sha256sum}, and compare against the stored hash retrieved by \texttt{pswd.awk}. Allow up to three retries.
+    \item If not found (or too many failed attempts), enter the sign-up flow: choose a unique username, hash the new password, and append both to \texttt{user.tsv}.
+    \item After both players are authenticated, call \texttt{python3 game.py \$usr1 \$usr2}.
+\end{enumerate}
+
+\subsection{Leaderboard (\texttt{leaderboard.sh} + \texttt{chart()})}
+
+\texttt{leaderboard.sh} receives a sort preference (1--4) as \texttt{\$1} and processes \texttt{history.csv} with AWK to compute wins, losses, and W/L ratios, then prints a ranked table. The Python \texttt{chart()} function reads the same CSV with \texttt{csv.reader}, tallies wins per player and frequencies per game type, and calls \texttt{matplotlib} to produce a two-subplot figure before saving it.
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Hurdles Faced and How They Were Overcome}
+
+\begin{enumerate}
+    \item \textbf{Othello diagonal indexing.}
+    Correctly slicing the diagonals of a 2-D array in a generic, direction-aware way was the hardest algorithmic challenge. NumPy does not expose diagonal slices directly, so each diagonal segment was extracted by computing the correct start index and stride on the flattened (\texttt{reshape(-1)}) array. Several off-by-one errors were caught through systematic test cases with small boards.
+
+    \item \textbf{Othello turn-skip and double-pass.}
+    When one player has no legal moves, the game should pass the turn; when \emph{neither} player does, the game should end. Initially the game could loop indefinitely. The fix was to call \texttt{get\_all\_valid()} lazily and only auto-skip when \texttt{all\_valid} is empty, while the full-board check in \texttt{Check\_Game\_Over()} covers the termination condition.
+
+    \item \textbf{Pygame cursor artefacts.}
+    Replacing the system cursor with a game piece required a transparent \texttt{SRCALPHA} surface so that the circle did not leave a rectangular ghost on the background. Setting \texttt{pygame.mouse.set\_visible(False)} and blitting a fresh surface each frame solved the artefact problem.
+
+    \item \textbf{Shell-to-Python argument passing.}
+    Passing authenticated usernames across the shell-to-Python boundary cleanly required using \texttt{sys.argv} rather than environment variables or files, keeping the interface simple and stateless.
+
+    \item \textbf{Password security in bash.}
+    Storing plaintext passwords is unsafe. SHA-256 hashing with \texttt{sha256sum} was used as a straightforward solution within the constraints of a bash-only authentication layer, without needing external libraries.
+
+    \item \textbf{Shared pygame window state across games.}
+    After a game finishes, the display mode must be reset to the main-menu resolution. This was handled by explicitly calling \texttt{pygame.display.set\_mode((600, 400))} and reinitialising the font after each \texttt{Game\_Start()} returns.
+\end{enumerate}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{What I Would Do Differently with 10 More Hours}
+
+\begin{enumerate}
+    \item \textbf{Add a Connect 4 game.} The CSV logging and leaderboard scripts already reference ``Connect4'' as a game type, indicating it was planned. Implementing it would complete the suite and make the statistics screen more meaningful.
+
+    \item \textbf{Refactor Othello diagonal logic.} The current stride-based 1-D indexing is correct but hard to read. I would replace it with explicit loops over \texttt{(dx, dy)} direction vectors, which are easier to verify and extend.
+
+    \item \textbf{Separate \texttt{Is\_Valid} and \texttt{Change\_if\_Valid} cleanly.} Both methods duplicate large blocks of directional logic. A shared helper \texttt{\_scan\_direction(x, y, dx, dy, chance, flip=False)} would eliminate the duplication and make unit testing straightforward.
+
+    \item \textbf{Add a simple AI opponent.} A minimax agent with alpha-beta pruning for Othello, or a random-then-winning-move heuristic for Tic-Tac-Toe, would make both games playable solo.
+
+    \item \textbf{Improve the authentication layer.} SHA-256 without a salt is vulnerable to rainbow-table attacks. Using \texttt{bcrypt} or \texttt{argon2} (even via a tiny Python helper script) would be a meaningful security improvement.
+
+    \item \textbf{Persistent in-game scores and replay.} Storing the full move sequence in \texttt{history.csv} would enable a replay viewer, which would be useful for reviewing games.
+\end{enumerate}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Bibliography}
+
+\begin{thebibliography}{9}
+
+\bibitem{pygame}
+Pygame Community.
+\textit{Pygame-CE Documentation}.
+\url{https://pyga.me/docs/}
+
+\bibitem{pygameSprites}
+Pygame Community.
+\textit{pygame.sprite --- Sprite classes for pygame}.
+\url{https://www.pygame.org/docs/ref/sprite.html}
+
+\bibitem{numpy}
+Harris, C.R. et al.
+\textit{Array programming with NumPy}.
+Nature, 585, 357--362 (2020).
+\url{https://numpy.org/doc/stable/}
+
+\bibitem{matplotlib}
+Hunter, J.D.
+\textit{Matplotlib: A 2D graphics environment}.
+Computing in Science \& Engineering, 9(3), 90--95 (2007).
+\url{https://matplotlib.org/stable/contents.html}
+
+\bibitem{sha256}
+OpenSSL Foundation.
+\textit{SHA-256 Hash Function Reference}.
+\url{https://www.openssl.org/docs/man3.0/man3/EVP_DigestInit.html}
+
+\bibitem{awk}
+The Open Group.
+\textit{awk --- pattern scanning and processing language (POSIX)}.
+\url{https://pubs.opengroup.org/onlinepubs/9699919799/utilities/awk.html}
+
+\bibitem{pythonInheritance}
+Python Software Foundation.
+\textit{Classes --- Python 3 Documentation}.
+\url{https://docs.python.org/3/tutorial/classes.html}
+
+\bibitem{csvModule}
+Python Software Foundation.
+\textit{csv --- CSV File Reading and Writing}.
+\url{https://docs.python.org/3/library/csv.html}
+
+\end{thebibliography}
+
+\end{document}
