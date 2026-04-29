@@ -1,0 +1,349 @@
+\documentclass[12pt]{article}
+ 
+\usepackage[a4paper, margin=1in]{geometry}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{url}
+ 
+ 
+\lstdefinestyle{codestyle}{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    keywordstyle=\bfseries,
+    commentstyle=\itshape,
+    showstringspaces=false,
+}
+ 
+\begin{document}
+ 
+% Title
+\title{\textbf{CS108 Project}\\[0.4em]Board Game Suite}
+\author{Gururatna Upadhyay and Kirti\\
+CSE}
+\date{\today}
+\maketitle
+\thispagestyle{empty}
+\newpage
+ 
+ 
+\tableofcontents
+\newpage
+ 
+ 
+\section{External Libraries Used}
+ 
+\begin{center}
+\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{|p{2.8cm}|p{10cm}|}
+\hline
+\textbf{Library} & \textbf{Purpose} \\
+\hline
+\texttt{pygame} & Core graphics, event handling, window management, font rendering, and audio playback for all games. \\
+\hline
+\texttt{numpy} & Efficient 2-D board representation using \texttt{np.zeros}, vectorised win checks with \texttt{np.all}, diagonal extraction, and array slicing throughout all game logic. \\
+\hline
+\texttt{matplotlib} & Generating post-game statistics charts: a bar chart of top player wins and a pie chart of game-type frequency, saved as \texttt{charts.png}. \\
+\hline
+\texttt{csv} & Appending match results (winner, loser, timestamp, game type) to \texttt{history.csv} and reading it back for leaderboard generation. \\
+\hline
+\texttt{sys} & Reading command-line arguments (\texttt{sys.argv}) to pass the two authenticated usernames from the shell script into Python. \\
+\hline
+\texttt{os} & Centring the pygame window via \texttt{SDL\_VIDEO\_CENTERED}, invoking the leaderboard shell script, and opening the generated chart image. \\
+\hline
+\texttt{datetime} & Timestamping each game result written to \texttt{history.csv}. \\
+\hline
+\texttt{math} & Used in Connect~4 for the animated drop effect, specifically \texttt{math.sin} and \texttt{math.pi} to produce a smooth ease-in falling motion for pieces. \\
+\hline
+\end{tabular}
+\end{center}
+ 
+
+\section{Directory Structure}
+ 
+\begin{itemize}
+    \item \texttt{game.py} --- Entry point and main menu; also contains the \texttt{BoardGame} base class, the \texttt{chart()} helper, and the \texttt{stats()} screen.
+    \item \texttt{othello.py} --- Full implementation of the \texttt{Othello} class, inheriting from \texttt{BoardGame}.
+    \item \texttt{tictactoe.py} --- Full implementation of the \texttt{Tic\_Tac\_Toe} class, inheriting from \texttt{BoardGame}.
+    \item \texttt{connect4.py} --- Full implementation of the \texttt{Connect\_4} class, inheriting from \texttt{BoardGame}.
+    \item \texttt{main.sh} --- Bash entry point: handles user authentication (login / sign-up) for both players and then calls \texttt{python3 game.py \$usr1 \$usr2}.
+    \item \texttt{leaderboard.sh} --- Displays a ranked leaderboard from \texttt{history.csv}, sorted by the preference chosen in the stats screen.
+    \item \texttt{check.awk} --- AWK script to check whether a username exists in \texttt{user.tsv}.
+    \item \texttt{pswd.awk} --- AWK script to retrieve the stored password hash for a given username.
+    \item \texttt{user.tsv} --- Tab-separated store of usernames and their SHA-256 password hashes.
+    \item \texttt{history.csv} --- Append-only log of completed matches: winner, loser, timestamp, game type.
+    \item \texttt{charts.png} --- Auto-generated statistics image produced after each game.
+\end{itemize}
+ 
+\section{Running Instructions}
+ 
+\begin{enumerate}
+    \item Ensure all Python libraries are installed:
+    \item From the project root directory, run:
+    \item Follow the on-screen prompts to log in or register both players.
+    \item The main menu appears -- select \textbf{Play Othello}, \textbf{Play Tic-Tac-Toe}, or \textbf{Play Connect~4}.
+    \item After each game, a statistics screen and leaderboard are shown automatically.
+    \item Press \texttt{Q} at any time during a game to quit back to the menu.
+\end{enumerate}
+ 
+\section{Features Implemented}
+ 
+\subsection{Authentication System (\texttt{main.sh})}
+ 
+\begin{itemize}
+    \item Two-player sequential login flow before any game starts.
+    \item Existing users are validated with a SHA-256 hashed password check via \texttt{sha256sum}.
+    \item Up to three password re-entry attempts before prompting the user to create a new account.
+    \item New users are registered: the username is checked for uniqueness, then the hashed credential pair is appended to \texttt{user.tsv}.
+    \item Duplicate usernames for Player 1 and Player 2 are explicitly rejected.
+\end{itemize}
+ 
+\subsection{Main Menu (\texttt{game.py})}
+ 
+\begin{itemize}
+    \item A pygame GUI with four buttons: \textit{Play Othello}, \textit{Play Tic-Tac-Toe}, \textit{Play Connect~4}, and \textit{Quit}.
+    \item For Othello, an additional screen asks whether the player wants hint overlays before the game begins.
+    \item Each completed match is appended to \texttt{history.csv} with winner, loser, timestamp, and game type.
+    \item After every game, the statistics and leaderboard screen is shown.
+\end{itemize}
+ 
+\subsection{Othello (\texttt{othello.py})}
+ 
+\begin{itemize}
+    \item Standard $8 \times 8$ Othello board rendered on a green background.
+    \item Full four-directional flip logic: horizontal, vertical, and both diagonals checked with NumPy array slicing.
+    \item Move validation (\texttt{Is\_Valid}) and board mutation (\texttt{Change\_if\_Valid}) are kept separate to avoid side-effects during hint calculation.
+    \item Automatic turn skip when the current player has no legal moves.
+    \item Game-over detection when the board is full or neither player has a legal move; piece count determines the winner.
+    \item \textbf{Hint mode}: when enabled, all valid moves are outlined in the current player's colour.
+    \item \textbf{Custom cursor}: when hints are disabled, the system cursor is replaced with a correctly coloured disc that follows the pointer.
+\end{itemize}
+ 
+\subsection{Tic-Tac-Toe (\texttt{tictactoe.py})}
+ 
+\begin{itemize}
+    \item Configurable grid size (\texttt{n\_col}) and winning run length (\texttt{length\_of\_win}), defaulting to a $10 \times 10$ grid with a run of 5.
+    \item Win condition checked without using loops by slicing of numpy arrays and string function.
+    \item Game-over overlay: a banner with the winner's name is shown.
+\end{itemize}
+ 
+\subsection{Connect~4 (\texttt{connect4.py})}
+ 
+\begin{itemize}
+    \item Configurable grid size (\texttt{n\_col}) and winning run length (\texttt{Winning\_Size}), defaulting to a $7 \times 7$ grid with a run of 4.
+    \item Gravity mechanic: pieces always fall to the lowest empty cell in the selected column, enforced by scanning \texttt{arr[col][n\_col-1-i]} from the bottom up.
+    \item \textbf{Animated drop}: each piece animates from the top of the column to its destination using a sine-based ease-in curve (\texttt{math.sin}), giving a natural ``falling'' feel.
+    \item Win condition is same as of the tic-tac-toe using numpy array slicing and string function.
+    \item Draw detection via \texttt{arr.all()}: if every cell is non-zero and no winner has been found, the game is declared a draw 
+    \item Post-game overlay with \textit{Quit} buttons, consistent with the other games.
+\end{itemize}
+ 
+\subsection{Statistics and Leaderboard}
+ 
+\begin{itemize}
+    \item After each game, \texttt{stats()} presents four sorting options: by name, wins, losses, or W/L ratio.
+    \item \texttt{leaderboard.sh} reads \texttt{history.csv} and prints a ranked table in the terminal.
+    \item \texttt{chart()} uses \texttt{matplotlib} to produce a dual-panel figure: a bar chart of top players by win count and a pie chart of game-type frequency. The image is saved and opened automatically.
+\end{itemize}
+ 
+\section{Code Logic}
+ 
+\subsection{Generic Base Class --- \texttt{BoardGame} (\texttt{game.py})}
+ 
+\texttt{BoardGame} is a lightweight abstract base that provides shared state and utilities to both game subclasses.
+ 
+\begin{itemize}
+    \item \textbf{Class attributes} \texttt{player1} and \texttt{player2} are set once from \texttt{sys.argv} and shared across all subclass instances in a session.
+    \item \texttt{switch\_turn(player)} returns \texttt{3 - player}, toggling cleanly between 1 and 2 without any conditional logic.
+    \item \texttt{check\_winner()} raises \texttt{NotImplementedError}, enforcing that every subclass must supply its own win logic.
+    \item Instance variables \texttt{winner} and \texttt{loser} are written by the subclass at game-end and read by \texttt{main\_menu()} to decide whether to log the result.
+\end{itemize}
+ 
+\subsection{Othello (\texttt{othello.py})}
+ 
+\subsubsection{Initialisation}
+ 
+The constructor derives the cell width from the window size and grid count:
+\[
+w = \frac{\text{size} - \text{thickness} \times (n+1)}{n}
+\]
+The board array \texttt{arr} is a NumPy $n \times n$ zero matrix where 0 = empty, 1 = black, 2 = white.
+ 
+\subsubsection{Move Validation --- \texttt{Is\_Valid(x, y, chance)}}
+ 
+Temporarily places the piece at \texttt{(x, y)}, then scans all four directions,if the boolen \texttt{check\_valid} is True it just checks if move is valid or not which is used in showing valid moves by \texttt{areValid\_positions}:
+\begin{itemize}
+    \item \textbf{Horizontal / Vertical}: iterates over the row or column, finds another cell of the same colour, and checks that every cell between them is the opponent's colour using \texttt{np.full} and \texttt{.all()}.
+    \item \textbf{Diagonals}: walks to the board edge first, then traverses the diagonal using stride-based 1-D indexing on the flattened array (\texttt{arr.reshape(-1)}).
+\end{itemize}
+The temporary piece is removed before returning.
+ 
+\subsubsection{Board Mutation --- \texttt{Change\_if\_Valid(x, y, chance)}}
+ 
+Uses the same directional logic as \texttt{Is\_Valid}, but instead of returning early it actually overwrites the sandwiched opponent pieces with \texttt{np.full(..., chance)}.
+ 
+\subsubsection{Game Loop --- \texttt{Game\_Start()}}
+ 
+Calls \texttt{Grid\_Set()} to draw the initial four pieces, then enters the main event loop. On each left-click, pixel coordinates are converted to grid indices via \texttt{pos\_to\_arr()}, and \texttt{Change\_if\_Valid} is called. If it succeeds the turn switches. If the new player has no valid moves, the turn is passed back automatically.
+ 
+\subsection{Tic-Tac-Toe (\texttt{tictactoe.py})}
+ 
+\subsubsection{Win Detection --- \texttt{Check\_win(chance, i, j)}}
+ 
+Extracts all the arrays horizontal, vertical, diagonal, and other diagonal using slicing:
+\begin{itemize}
+    \item \textbf{Horizontal}: \texttt{arr[i]}
+    \item \textbf{Vertical}: \texttt{arr[:, j]}
+    \item \textbf{Diagonal /}: extracted via stride $n_{\text{col}}-1$ on the flattened array.
+    \item \textbf{Diagonal \textbackslash}: extracted via stride $n_{\text{col}}+1$ on the flattened array.
+\end{itemize}
+ 
+\subsubsection{Game Loop --- \texttt{Game\_Start()}}
+ 
+Redraws the grid every frame. A custom cursor follows the mouse and is hidden once a cell is clicked, reappearing only when the mouse enters a different cell. On game-over, a coloured rectangle with the winner's name is rendered and the window pauses for 3 seconds before exiting.
+ 
+\subsection{Connect~4 (\texttt{connect4.py})}
+ 
+\subsubsection{Initialisation}
+ 
+The constructor derives the circle diameter from the window size, column count, and gap spacing:
+\[
+d = \frac{\text{size} - (n_{\text{col}}+1) \times \text{gap}}{n_{\text{col}}}
+\]
+The board array \texttt{arr} is an $n \times n$ NumPy integer matrix (0 = empty, 1 = Player~1, 2 = Player~2). The window height is set to $\text{size} + 1.5 \times \text{border}$ to leave room for a column-indicator strip above the grid.
+ 
+\subsubsection{Column Selection --- \texttt{pos\_to\_arr(x)}}
+ 
+Maps a pixel $x$-coordinate to a column index by comparing against evenly spaced thresholds:
+\[
+\text{col} = i \quad \text{if} \quad i \cdot (gap + d) < x - \text{border} \leq (i+1) \cdot (gap + d)
+\]
+Edge columns (0 and $n-1$) are caught by guard checks before the loop.
+ 
+\subsubsection{Piece Placement}
+ 
+On a left-click the code scans the selected column from the bottom row upward:
+ 
+The resolved \texttt{(x\_cord, y\_cord)} pixel position is passed to \texttt{Draw\_Circle} before the array cell is updated, ensuring the animation completes before the board state changes.
+ 
+\subsubsection{Dropping Ball Effect --- \texttt{Draw\_Circle(x, y, nn)}}
+ 
+Animates a piece falling from the top of the column to its destination using a sine ease-in curve. The vertical position at each frame is:
+\[
+y_1 = \text{border} + (y - \text{border}) \cdot \left(\sin\!\left(\frac{\pi}{2} \cdot \frac{y_0}{y - \text{border}}\right)\right)^{k}
+\]
+where $y_0$ advances by \texttt{speed\_factor}~$\times$~$(y - \text{border})$ each frame and $k$ (\texttt{jerk\_factor}~$= 5$) controls how abruptly the piece accelerates. The clock is ticked at 100\,fps to decouple animation speed from hardware.
+ 
+\subsubsection{Win Detection --- \texttt{Check\_win(chance, i, j)}}
+ 
+Reuses the same NumPy string-matching approach as Tic-Tac-Toe. Four 1-D arrays are extracted through the just-placed cell $(i,j)$:
+\begin{itemize}
+    \item \textbf{Horizontal}: \texttt{arr[i]}
+    \item \textbf{Vertical}: \texttt{arr[:, j]}
+    \item \textbf{Diagonal /}: extracted via stride $n_{\text{col}}-1$ on the flattened array.
+    \item \textbf{Diagonal \textbackslash}: extracted via stride $n_{\text{col}}+1$ on the flattened array.
+\end{itemize}
+Each array is cast to a string and \texttt{Check\_is\_in} checks whether the target run (\texttt{np.full(Winning\_Size, chance)}) appears as a substring, giving an $O(n)$ check per direction.
+ 
+\subsubsection{Draw Detection --- \texttt{Check\_Draw()}}
+ 
+\texttt{self.arr.all()} returns \texttt{True} when every element is non-zero, meaning the board is full. This is checked immediately after every move; if the board is full and no win has been detected, the result is a draw.
+ 
+\subsubsection{Game Loop --- \texttt{Game\_Start()}}
+ 
+Calls \texttt{Grid\_Set()} to paint the empty board, then enters the main event loop. On each left-click:
+\begin{enumerate}
+    \item \texttt{pos\_to\_arr(x)} maps the click to a column index.
+    \item The loop finds the lowest empty row in that column.
+    \item \texttt{Draw\_Circle} animates the piece falling to its destination.
+    \item The array is updated and \texttt{Check\_win} / \texttt{Check\_Draw} are evaluated.
+    \item If the game ends, \texttt{Winner\_Found} renders the result overlay; the inner wait-loop handles \textit{Restart} and \textit{Quit}.
+    \item Otherwise, \texttt{Change(next\_number)} switches the active player.
+\end{enumerate}
+ 
+\subsection{Authentication System (\texttt{main.sh})}
+ 
+The script handles both players sequentially:
+\begin{enumerate}
+    \item Check the username against \texttt{user.tsv} via \texttt{check.awk}.
+    \item If found, read the password, hash it with \texttt{sha256sum}, and compare against the stored hash from \texttt{pswd.awk}. Allow up to three retries.
+    \item If not found, enter the sign-up flow: choose a unique username, hash the new password, and append to \texttt{user.tsv}.
+    \item After both players are authenticated, call \texttt{python3 game.py \$usr1 \$usr2}.
+\end{enumerate}
+ 
+\subsection{Leaderboard (\texttt{leaderboard.sh} and \texttt{chart()})}
+ 
+\texttt{leaderboard.sh} receives a sort preference (1--4) and processes \texttt{history.csv} with AWK to compute wins, losses, and W/L ratios, then prints a ranked table. The Python \texttt{chart()} function reads the same CSV, tallies wins per player and frequencies per game type, and calls \texttt{matplotlib} to produce a two-subplot figure.
+ 
+\section{Problems Faced}
+ 
+\begin{enumerate}
+    \item \textbf{Slicing in Othello(Hardest part)}
+    Correctly slicing diagonals of a 2-D array in a direction-aware way was the hardest challenge. NumPy does not expose diagonal slices directly, so each segment was extracted by computing the correct start index and stride on the flattened (\texttt{reshape(-1)}) array. Many trials needed to fix it using print statements at different part of the code
+ 
+    \item \textbf{Connect~4 animation timing.}
+    The first attempt at the drop animation was frame-rate dependent, running too fast on powerful machines. Introducing pygame clock decoupled the animation from CPU speed. The sine ease-in formula took a time think and frame the excat formaula, but after some trials to adjust \texttt{jerk\_factor} and \texttt{speed\_factor} until the motion felt natural without being too slow.
+ 
+    \textbf{Checking Win withou Loops}
+    This was also a very tough work as it took a lot of time to come to conclusion that we can use slicing and then string funtions to check win condition which seems simple when spotted. Firstly I searched numpy function to do it but didn't come to a conclusion.
+ 
+    \item \textbf{Shell-to-Python argument passing.}
+    Passing authenticated usernames across the shell-to-Python boundary cleanly required \texttt{sys.argv} rather than environment variables or files, keeping the interface simple and stateless.
+ 
+    \item \textbf{Connect~4 draw detection triggering on wins.}
+    Because \texttt{Check\_Draw()} (which calls \texttt{arr.all()}) was evaluated before \texttt{Check\_win()}, a full board with a winning move was sometimes mis-classified as a draw. The fix was to evaluate the win condition first and only enter the draw path when no winner exists.
+.
+\end{enumerate}
+ 
+\section{What If More Time Was Given ?}
+ 
+\begin{enumerate}
+  
+    \item \textbf{Add more graphics and visuals to the game interface.} If we had more time, we would have come up with some good graphics that would have enhanced the visual appeal of the game interface (like background images).
+ 
+    \item \textbf{Added Some Nice Features}
+    Adding Cursor with opponents color in othello and tic tac toe. Adding
+    different modes in all the games.
+ 
+    \item \textbf{Added Some Nice Features}
+    Adding a way to undo the moves in case someone has made a mistake like in online chess.
+ 
+    \item \textbf{Add game replay.} Storing the full move sequence in \texttt{history.csv} would enable a replay viewer for reviewing past games.
+\end{enumerate}
+ 
+
+\section{Bibliography}
+ 
+\begin{thebibliography}{9}
+ 
+\bibitem{pygame}
+Pygame Community.
+\textit{Pygame-CE Documentation}.
+\url{https://pyga.me/docs/}
+ 
+\bibitem{pygameSprites}
+Pygame Community.
+\textit{pygame.sprite --- Sprite classes for pygame}.
+\url{https://www.pygame.org/docs/ref/sprite.html}
+ 
+\bibitem{matplotlib}
+Numpy
+\textit{Numpy Logic Function}.
+\url{https://numpy.org/devdocs/reference/routines.logic.html}
+ 
+ 
+\bibitem{awk}
+GeeksforGeeks
+\textit{Pygame Tutorial}.
+\url{https://www.geeksforgeeks.org/python/pygame-tutorial/}
+ 
+\bibitem{csvModule}
+Python Software Foundation.
+\textit{csv --- CSV File Reading and Writing}.
+\url{https://docs.python.org/3/library/csv.html}
+ 
+ 
+\end{thebibliography}
+ 
+\end{document}
